@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Expects an Arch with all partitions mounted and with a base system.
-
-# TODO: vagrant
+# See CONFIG part before running.
 
 if [[ $EUID -ne 0 ]]; then
 	echo "apstrap must be run as root."
@@ -37,7 +36,7 @@ check_yaourt() {
 	echo "Installing yaourt."
 
 	cd /tmp
-	ensure_installed "wget" || exit 1
+	ensure_installed "wget" || die "wget installation failed!"
 	wget http://aur.archlinux.org/packages/package-query/package-query.tar.gz
 	tar zxvf package-query.tar.gz
 	cd package-query
@@ -194,7 +193,6 @@ get_package_selection() {
 	PACKAGES+=(testdisk)
 
 	(( $INSTALL_DEVEL )) && PACKAGES+=(subversion gdb valgrind ruby php ghc doxygen cmake swi-prolog markdown jslint gprof2dot-git)
-	(( $INSTALL_SERVERS )) && PACKAGES+=(lighttpd mysql apache)
 	(( $INSTALL_MUSIC )) && PACKAGES+=(mpd ncmpcpp mpc vorbis-tools pulseaudio pulseaudio-alsa)
 	(( $INSTALL_MAIL )) && PACKAGES+=(postfix mutt fetchmail procmail)
 	(( $INSTALL_GAMES )) && PACKAGES+=(nethack adom slashem)
@@ -231,34 +229,34 @@ check_user_environment() {
 	#git clone git://github.com/MichalPokorny/scripts.git bin
 	#chown -R prvak:prvak ~prvak
 
-	su "$user" -c "xmonad --recompile"
+	#su "$user" -c "xmonad --recompile"
 
-	if (( $? )); then
-		die "Failed to recompile XMonad for $user!"
-	else
-		echo " ==> Recompiled XMonad of $user"
-	fi
+	#if (( $? )); then
+	#	die "Failed to recompile XMonad for $user!"
+	#else
+	#	echo " ==> Recompiled XMonad of $user"
+	#fi
 }
 
-check_vgaswitcheroo() {
-	tag="# Added by check.sh. Don't remove this line."
-	grep "$tag" /etc/rc.local --quiet
+#check_vgaswitcheroo() {
+#	tag="# Added by check.sh. Don't remove this line."
+#	grep "$tag" /etc/rc.local --quiet
+#
+#	if (( $? )); then
+#		cat >> /etc/rc.local <<EOF
 
-	if (( $? )); then
-		cat >> /etc/rc.local <<EOF
-
-$tag
+#$tag
 # Turn off vgaswitcheroo if present.
-SWITCHER="/sys/kernel/debug/vgaswitcheroo/switch"
-[ -f \$SWITCHER ] && echo OFF > \$SWITCHER
-EOF
-		echo " ==> Added vgaswitcheroo lines to /etc/rc.local"
-	else
-		echo " ==> /etc/rc.local already tagged, won't retag."
-	fi
-}
+#SWITCHER="/sys/kernel/debug/vgaswitcheroo/switch"
+#[ -f \$SWITCHER ] && echo OFF > \$SWITCHER
+#EOF
+#		echo " ==> Added vgaswitcheroo lines to /etc/rc.local"	else
+#		echo " ==> /etc/rc.local already tagged, won't retag."
+#	fi
+#}
 
 check_sudoers() {
+	# TODO: Modify
 	tag="# Added by check.sh. Don't remove this line."
 	grep "$tag" /etc/sudoers --quiet
 
@@ -285,6 +283,7 @@ update() {
 }
 
 install_grub() {
+	# TODO: Have a look at it.
 	if [ -n "$DISK_DEVICE" ]; then
 		grub-install "$DISK_DEVICE" # TODO: vybrat zarizeni!
 		grub-mkconfig > /boot/grub/grub.cfg
@@ -302,27 +301,11 @@ patch_acpi_event_handler() {
 	fi
 }
 
-check_gems() {
-	GEMS=()
-
-	# btcreport
-	GEMS+=(eu_central_bank money mtgox)
-
-	# incoming-mail
-	GEMS+=(mail)
-
-	gem install ${GEMS[@]}
-	(( $? )) && die "Failed to install required gems for root!"
-	su prvak sh -c "gem install ${GEMS[@]}"
-	(( $? )) && die "Failed to install required gems for prvak!"
-}
-
 enable_daemons() {
 	systemctl enable upower
 	systemctl enable dbus
 	(( $INSTALL_MUSIC )) && systemctl enable mpd
 	(( $INSTALL_X )) && systemctl enable xdm
-	(( $INSTALL_SERVERS )) && systemctl enable mysqld
 }
 
 check_system() {
@@ -332,13 +315,12 @@ check_system() {
 	check_font
 	check_locale
 	check_packages
-	check_gems
 	check_locale_gen
 
-	check_user "prvak"
+	check_user "lukas"
 
 	check_user_environment "root"
-	check_user_environment "prvak"
+	check_user_environment "lukas"
 
 	# TODO: check GRUB
 
@@ -358,18 +340,19 @@ check_system() {
 
 	update
 
-	install_grub
+	#install_grub
 
-	enable_daemons
+	#enable_daemons
 
 	echo "Most drone work done. The remaining stuff:"
 	echo "    Configure /etc/hosts: add l-alias, hostname alias"
-	echo "    Configure the web server."
 
 	# TODO:
 	#/etc/lighttpd/lighttpd.conf; lighttpd do demonu
 	#mkdir -p /srv/http/public
 }
+
+### CONFIG ###
 
 INSTALL_SERVERS=1
 INSTALL_ANDROID=1
@@ -383,8 +366,5 @@ INSTALL_X=1
 HOSTNAME=""
 DISK_DEVICE=""
 
-echo "apstrap by prvak"
+echo "apstrap by Folwar, based on apstrap by prvak"
 check_system
-
-# TODO: echo "vboxdrv" >> /etc/modules-load.d/virtualbox.conf
-# TODO: blacklist pcspkr
