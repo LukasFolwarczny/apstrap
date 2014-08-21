@@ -1,9 +1,24 @@
-apstrap - Arch Linux Prvak bootstrap
+apstrap
+=======
+
+apstrap - Arch Linux Folwar bootstrap
+2014 Lukáš Folwarczný <lfolwarczny@gmail.com>
+
+About
+-----
+
+Fork of the original Prvak bootstrap which I am modifying to install
+Arch the way I do rather than Michal does.
+
+See: https://github.com/MichalPokorny/apstrap
 Copyright (c) 2012 Michal Pokorny
 All rights reserved.
 
 A simplification of the tedious process of installing a system.
-I hope to make my Arch installation as easy as "./apstrap.sh".
+The whole installation process should be as easy as "./apstrap.sh".
+
+Usage
+-----
 
 The script expects all filesystems to be in place. Run it after
 chrooting to a system with base packages installed. It also
