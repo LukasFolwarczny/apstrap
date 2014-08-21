@@ -94,7 +94,7 @@ check_locale() {
 	NEW_LANG="en_US.UTF-8"
 	if [ ! -f /etc/locale.conf ]; then
 		echo "Setting LANG to $NEW_LANG."
-		echo "LANG=\"$NEW_LANG\"" > /etc/locale.conf
+		localectl set-locale "LANG=\"$NEW_LANG\""
 	else
 		. /etc/locale.conf
 		if [ "$LANG" != "$NEW_LANG" ]; then
@@ -106,16 +106,21 @@ check_locale() {
 }
 
 check_locale_gen() {
-	# TODO: check double-apply
 	if [ ! -f /etc/locale.gen ]; then
 		die "/etc/locale.gen doesn't exist!"
 	fi
 
-	patch -p1 /etc/locale.gen uncomment-my-locale.patch -N -r-
+	patch --dry-run -R /etc/locale.gen uncomment-my-locale.patch > /dev/null
+
 	if (( $? )); then
-		die "Error patching /etc/locale.gen!"
+		patch -p1 /etc/locale.gen uncomment-my-locale.patch -N -r-
+		if (( $? )); then
+			die "Error patching /etc/locale.gen!"
+		fi
+		locale-gen
 	fi
-	locale-gen
+
+	echo " ==> Locale-gen OK."
 }
 
 get_package_selection() {
