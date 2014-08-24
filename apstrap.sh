@@ -194,10 +194,10 @@ get_package_selection() {
 	PACKAGES+=(gnuplot)
 
 	if (( $INSTALL_TEX )); then
-	# texlive-most
-	PACKAGES+=(texlive-core texlive-fontsextra texlive-formatsextra texlive-games texlive-genericextra)
-	PACKAGES+=(texlive-htmlxml texlive-humanities texlive-latexextra texlive-music texlive-pictures)
-	PACKAGES+=(texlive-plainextra texlive-pstricks texlive-publishers texlive-science)
+		# texlive-most
+		PACKAGES+=(texlive-core texlive-fontsextra texlive-formatsextra texlive-games texlive-genericextra)
+		PACKAGES+=(texlive-htmlxml texlive-humanities texlive-latexextra texlive-music texlive-pictures)
+		PACKAGES+=(texlive-plainextra texlive-pstricks texlive-publishers texlive-science)
 	fi
 
 	# Chce multilib
@@ -217,11 +217,23 @@ check_packages() {
 	echo " ==> Packages OK."
 }
 
+check_root() {
+	if [ ! -f ./rootpwdset ]; then
+		echo "Set root password. (If already set, input just two random strings.)"
+		passwd
+		touch ./rootpwdset
+	fi
+}
+
 check_user() {
-	# TODO: vytvor tohodle uzivatele a jeho domaci adresar
 	user="$1"
-	echo "user check not implemented. please create user $1."
-	#useradd -k prvak
+	name="$2"
+	if ! id $1 >/dev/null 2>&1; then
+		useradd -m -c "$name" $1
+		echo "User $1 ($2) created, set his password."
+		passwd $1
+	fi
+	echo " ==> User '$user' OK."
 }
 
 check_user_environment() {
@@ -264,6 +276,8 @@ check_user_environment() {
 
 check_sudoers() {
 	# TODO: Modify
+	return
+	exit 1
 	tag="# Added by check.sh. Don't remove this line."
 	grep "$tag" /etc/sudoers --quiet
 
@@ -290,7 +304,7 @@ update() {
 }
 
 install_grub() {
-	# TODO: Have a look at it.
+	# TODO
 	if [ -n "$DISK_DEVICE" ]; then
 		grub-install "$DISK_DEVICE" # TODO: vybrat zarizeni!
 		grub-mkconfig > /boot/grub/grub.cfg
@@ -302,17 +316,19 @@ install_grub() {
 }
 
 patch_acpi_event_handler() {
-	patch -p1 /etc/acpi/handler.sh handle-acpi-events.patch -N -r-
-	if (( $? )); then
-		die "Error patching /etc/acpi/handler.sh!"
-	fi
+	# TODO
+	#patch -p1 /etc/acpi/handler.sh handle-acpi-events.patch -N -r-
+	#if (( $? )); then
+	#	die "Error patching /etc/acpi/handler.sh!"
+	#fi
+	echo patch_acpi_event_handler not implemented.
 }
 
 enable_daemons() {
-	systemctl enable upower
+	###systemctl enable upower
 	systemctl enable dbus
-	(( $INSTALL_MUSIC )) && systemctl enable mpd
-	(( $INSTALL_X )) && systemctl enable xdm
+	###(( $INSTALL_MUSIC )) && systemctl enable mpd
+	###(( $INSTALL_X )) && systemctl enable xdm
 }
 
 check_system() {
@@ -324,10 +340,13 @@ check_system() {
 	check_packages
 	check_locale_gen
 
-	check_user "lukas"
+	check_root
+	check_user lukas "Lukáš Folwarczný"
+	check_user test "Králík Pokusný"
 
-	check_user_environment "root"
-	check_user_environment "lukas"
+	check_user_environment root
+	check_user_environment lukas
+	check_user_environment test
 
 	# TODO: check GRUB
 
@@ -341,17 +360,21 @@ check_system() {
 	#EOF
 
 	check_vgaswitcheroo
-	check_sudoers
+	# TODO
+	# check_sudoers
 
-	patch_acpi_event_handler
+	# TODO: Set acpi
+	# patch_acpi_event_handler
 
 	update
 
+	# TODO
 	#install_grub
 
-	#enable_daemons
+	enable_daemons
 
 	echo "Most drone work done. The remaining stuff:"
+	# TODO: Update.
 	echo "    Configure /etc/hosts: add l-alias, hostname alias"
 
 	# TODO:
@@ -368,7 +391,9 @@ INSTALL_TEX=1
 INSTALL_LAPTOP=1
 INSTALL_X=1
 HOSTNAME=""
-DISK_DEVICE=""
+#DISK_DEVICE=""
 
-echo "apstrap by Folwar, based on apstrap by prvak"
+###
+
+echo "apstrap by Folwar BETA, based on apstrap by prvak"
 check_system
