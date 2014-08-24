@@ -125,78 +125,84 @@ check_locale_gen() {
 get_package_selection() {
 	PACKAGES=()
 
-	# Console utils, font
-	PACKAGES+=(mc wget elinks lynx tmux terminus-font gvim calc openssh alsa-utils colordiff sudo sux autojump powertop iftop iotop ack lftp)
-	PACKAGES+=(acpi acpid pm-utils unrar zip macchanger smartmontools)
-	PACKAGES+=(gcc patch grub-bios make mlocate bash-completion)
-	PACKAGES+=(exfat-utils fuse-exfat nmap iptables dnsutils sshfs gnu-netcat)
+	# Essential stuff
+	PACKAGES+=(base-devel linux-tools)
+	PACKAGES+=(mc vim openssh sudo bc less fakeroot)
+	PACKAGES+=(gcc patch make git)
 
-	PACKAGES+=(fortune-mod)
+	# Basic stuff
+	PACKAGES+=(unrar unzip)
+	PACKAGES+=(wget curl rsync)
+	PACKAGES+=(colordiff bash-completion)
+	PACKAGES+=(terminus-font tmux)
+	PACKAGES+=(gtypist moc irssi)
+	PACKAGES+=(cups ntp)
 
-	# TODO: drivery
-	PACKAGES+=(wicd git)
+	(( $INSTALL_DEVEL )) && PACKAGES+=(python perl ghc swi-prolog gdb markdown)
+
+	# Drivers
+	PACKAGES+=(alsa-utils alsa-firmware alsa-plugins)
+	PACKAGES+=(ntfs-3g-fuse exfat-utils fuse-exfat)
+	(( $INSTALL_LAPTOP )) && PACKAGES+=(acpi acpid)
+
+	# Utils
+	PACKAGES+=(macchanger traceroute)
+
+	PACKAGES+=(ecryptfs-utils) ### TODO: config it
 
 	if (( $INSTALL_X )); then
 		# X
-		PACKAGES+=(xorg-server xorg-xdm xmonad xmonad-contrib xorg-xrandr xorg-xmodmap)
+		PACKAGES+=(xorg-server xorg-xrandr xorg-xev awesome)
+
+		PACKAGES+=(scrot xscreensaver)
 
 		# X applications
-		PACKAGES+=(rxvt-unicode firefox gimp inkscape evince mplayer flashplugin vlc xscreensaver feh orage zim pidgin xclip geeqie lxappearance xvidcap)
-		PACKAGES+=(scrot xloadimage graphviz eog konversation hamster-time-tracker)
+		PACKAGES+=(evince mupdf okular)
+		PACKAGES+=(luakit firefox chromium flashplugin)
+		PACKAGES+=(sxiv eog feh inkscape ipe)
+		PACKAGES+=(rxvt-unicode urxvt-perls)
 
-		# Wacom driver
-		PACKAGES+=(xf86-input-wacom)
+		PACKAGES+=(jdownloader qbittorrent)
 
-		# xosdutil dependencies
-		PACKAGES+=(libconfig xosd font-bh-ttf)
+		PACKAGES+=(vlc)
 
-		PACKAGES+=(lyx)
+		PACKAGES+=(baobab)
 
-		# File sharing
-		PACKAGES+=(amule transmission-gtk)
+		PACKAGES+=(graphviz gnuplot)
 
-		PACKAGES+=(virtualbox)
-		gpasswd -a prvak vboxusers 2>&1 > /dev/null
+		(( $INSTALL_STUFF )) && PACKAGES+=(easytag digikam)
+		(( $INSTALL_STUFF )) && PACKAGES+=(geogebra octave gimp glpk)
+		(( $INSTALL_LAPTOP )) && PACKAGES+=(xf86-input-synaptics)
 
-		# Libreoffice
-		PACKAGES+=(libreoffice-base libreoffice-calc libreoffice-draw libreoffice-en-US libreoffice-gnome libreoffice-impress libreoffice-math libreoffice-writer)
+		PACKAGES+=(libreoffice-still-base libreoffice-still-calc libreoffice-still-draw)
+		PACKAGES+=(libreoffice-still-cs libreoffice-still-impress libreoffice-still-math)
+		PACKAGES+=(libreoffice-still-writer)
 
-		PACKAGES+=(xorg-xkill)
-	
-		PACKAGES+=(tuxguitar)
+		PACKAGES+=(gnumeric)
 
-		(( $INSTALL_DEVEL )) && PACKAGES+=(monodevelop bless gcolor2 wireshark-gtk)
-		(( $INSTALL_MUSIC )) && PACKAGES+=(fmit audacity)
-		(( $INSTALL_GAMES )) && PACKAGES+=(freeciv ltris)
-		(( $INSTALL_STUFF )) && PACKAGES+=(homebank sage urbanterror blender krusader chromium freemind mypaint)
-		(( $INSTALL_ANDROID )) && PACKAGES+=(eclipse android-sdk eclipse-android)
-		(( $INSTALL_TABLET )) && PACKAGES+=(mypaint xournal)
+		PACKAGES+=(dropbox)
+
+		# Util
+		PACKAGES+=(gparted)
+		## TODO: JAVA???
+
+		PACKAGES+=(udiskie) # Auto-mounting
+
+		(( $INSTALL_MAIL )) && PACKAGES+=(thunderbird gnupg thunderbird-enigmail)
 	fi
 
 	PACKAGES+=(gnuplot)
 
+	if (( $INSTALL_TEX )); then
 	# texlive-most
 	PACKAGES+=(texlive-core texlive-fontsextra texlive-formatsextra texlive-games texlive-genericextra)
 	PACKAGES+=(texlive-htmlxml texlive-humanities texlive-latexextra texlive-music texlive-pictures)
 	PACKAGES+=(texlive-plainextra texlive-pstricks texlive-publishers texlive-science)
+	fi
 
 	# Chce multilib
 	#$INSTALL wine
 	#$INSTALL skype
-
-	# Fine tuning
-	PACKAGES+=(cpupower e4rat)
-
-	# For webcam-record
-	PACKAGES+=(gstreamer0.10-good-plugins)
-
-	PACKAGES+=(testdisk)
-
-	(( $INSTALL_DEVEL )) && PACKAGES+=(subversion gdb valgrind ruby php ghc doxygen cmake swi-prolog markdown jslint gprof2dot-git)
-	(( $INSTALL_MUSIC )) && PACKAGES+=(mpd ncmpcpp mpc vorbis-tools pulseaudio pulseaudio-alsa)
-	(( $INSTALL_MAIL )) && PACKAGES+=(postfix mutt fetchmail procmail)
-	(( $INSTALL_GAMES )) && PACKAGES+=(nethack adom slashem)
-	(( $INSTALL_STUFF )) && PACKAGES+=(octave asymptote selenium-server-standalone)
 
 	echo "${PACKAGES[@]}"
 }
@@ -207,6 +213,7 @@ check_packages() {
 		# echo "    $package"
 		ensure_installed "$package"
 	done
+	mandb # TODO: Is it necessary?
 	echo " ==> Packages OK."
 }
 
@@ -354,14 +361,11 @@ check_system() {
 
 ### CONFIG ###
 
-INSTALL_SERVERS=1
-INSTALL_ANDROID=1
 INSTALL_MAIL=1
 INSTALL_STUFF=1
 INSTALL_DEVEL=1
-INSTALL_GAMES=1
-INSTALL_MUSIC=1
-INSTALL_TABLET=1
+INSTALL_TEX=1
+INSTALL_LAPTOP=1
 INSTALL_X=1
 HOSTNAME=""
 DISK_DEVICE=""
