@@ -14,43 +14,62 @@ die() {
 }
 
 ensure_installed() {
-	pacman -Q "$1" 2>&1 > /dev/null
-	if (( $? )); then
-		echo " ==> Package not installed: $package!"
+	command=yaourt
+	if [ "$1" = "-p" ]; then
+		command=pacman
+		shift
+	fi
 
-		yaourt --noconfirm -S $package 2>&1 > /dev/null
-		if (( $? )); then
-			echo " ==> Failed to install package!"
-			exit 1
-		fi
+	package="$1"
+	pacman -Q "$package" >/dev/null 2>&1
+	if (( $? )); then
+		[ "$command" = yaourt ] && echo " ==> Package not installed: $package Installing..."
+		$command --noconfirm -S $package >/dev/null 2>&1 || die "Failed to install package!"
+	fi
+}
+
+ensure_installed_group() {
+	command=yaourt
+	if [ "$1" = "-p" ]; then
+		command=pacman
+		shift
+	fi
+
+	group="$1"
+	if [ -n "`pacman --noconfirm -Sp --needed "$group"`" ]; then
+		[ "$command" = yaourt ] && echo " ==> Package group not installed: $group Installing..."
+		$command --noconfirm -S --needed $group >/dev/null 2>&1 || die "Failed to install group!"
 	fi
 }
 
 check_yaourt() {
-	yaourt --help 2>&1 > /dev/null
+	yaourt --help >/dev/null 2>&1
 	if [ $? != 127 ]; then
 		echo " ==> Yaourt already installed."
 		return 0
 	fi
 		
-	echo "Installing yaourt."
+	echo "Installing yaourt..."
 
 	cd /tmp
-	ensure_installed "wget" || die "wget installation failed!"
-	wget http://aur.archlinux.org/packages/package-query/package-query.tar.gz
-	tar zxvf package-query.tar.gz
+	ensure_installed_group -p base-devel
+	ensure_installed -p wget
+	wget http://aur.archlinux.org/packages/pa/package-query/package-query.tar.gz >/dev/null 2>&1 \
+	 || die "package-query download failed!"
+	tar zxvf package-query.tar.gz >/dev/null 2>&1
 	cd package-query
-	makepkg -si --asroot
+	makepkg --noconfirm -si --asroot >/dev/null 2>&1 || die "package-query installation failed!"
 	cd ..
-	wget http://aur.archlinux.org/packages/yaourt/yaourt.tar.gz
-	tar zxvf yaourt.tar.gz
+	wget http://aur.archlinux.org/packages/ya/yaourt/yaourt.tar.gz >/dev/null 2>&1 \
+	 || die "yaourt download failed!"
+	tar zxvf yaourt.tar.gz >/dev/null 2>&1
 	cd yaourt
-	makepkg -si --asroot
+	makepkg --noconfirm -si --asroot >/dev/null 2>&1 || die "yaourt installation failed!"
 	cd ..
 	rm -r package-query
 	rm -r yaourt
 
-	yaourt --help 2>&1 > /dev/null
+	yaourt --help >/dev/null 2>&1
 	[ $? == 127 ] && die "yaourt installation failed!"
 
 	echo " ==> Yaourt installed."
@@ -124,9 +143,10 @@ check_locale_gen() {
 
 get_package_selection() {
 	PACKAGES=()
+	GROUPZ=()
 
 	# Essential stuff
-	PACKAGES+=(base-devel linux-tools)
+	GROUPZ+=(linux-tools)
 	PACKAGES+=(mc vim openssh sudo bc less fakeroot)
 	PACKAGES+=(gcc patch make git)
 
@@ -203,14 +223,16 @@ get_package_selection() {
 	# Chce multilib
 	#$INSTALL wine
 	#$INSTALL skype
-
-	echo "${PACKAGES[@]}"
 }
 
 check_packages() {
 	echo "Checking packages..."
-	for package in `get_package_selection`; do
-		# echo "    $package"
+	get_package_selection
+
+	for group in ${GROUPZ[@]}; do
+		ensure_installed_group "$group"
+	done
+	for package in ${PACKAGES[@]}; do
 		ensure_installed "$package"
 	done
 	mandb # TODO: Is it necessary?
