@@ -93,11 +93,11 @@ check_locale() {
 	NEW_LANG="en_US.UTF-8"
 	if [ ! -f /etc/locale.conf ]; then
 		echo "Setting LANG to $NEW_LANG."
-		localectl set-locale "LANG=\"$NEW_LANG\""
+		localectl set-locale "LANG=$NEW_LANG"
 	else
 		. /etc/locale.conf
 		if [ "$LANG" != "$NEW_LANG" ]; then
-			die "LANG is $LANG, but should be $NEW_LANG! Fix /etc/locale.conf."
+			die "LANG is $LANG, but should be $NEW_LANG! Fix or delete /etc/locale.conf."
 		fi
 	fi
 
@@ -109,10 +109,10 @@ check_locale_gen() {
 		die "/etc/locale.gen doesn't exist!"
 	fi
 
-	patch --dry-run -R /etc/locale.gen uncomment-my-locale.patch > /dev/null
+	patch --dry-run -R /etc/locale.gen uncomment-my-locale.patch >/dev/null
 
 	if (( $? )); then
-		patch -p1 /etc/locale.gen uncomment-my-locale.patch -N -r-
+		patch -p1 /etc/locale.gen uncomment-my-locale.patch -N -r- >/dev/null 2>&1
 		if (( $? )); then
 			die "Error patching /etc/locale.gen!"
 		fi
@@ -337,8 +337,8 @@ check_system() {
 	check_timezone
 	check_font
 	check_locale
-	check_packages
 	check_locale_gen
+	check_packages
 
 	check_root
 	check_user lukas "Lukáš Folwarczný"
