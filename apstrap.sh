@@ -260,23 +260,26 @@ check_user() {
 
 check_user_environment() {
 	user="$1"
-	# TODO: v prvakovi to nechci mit read-only!
-	# TODO: downloadni si dotfiles, scripts
-	echo "user environment check not implemented. please check environment of user $1."
+	if [ "$user" = root ]; then
+		HOMED=/root
+	else
+		HOMED=/home/$user
+	fi
 
-	#cd ~prvak
-	#git clone git://github.com/MichalPokorny/dotfiles.git .
-	#mkdir bin
-	#git clone git://github.com/MichalPokorny/scripts.git bin
-	#chown -R prvak:prvak ~prvak
+	if [ ! -d $HOMED/git/dotfiles/ ]; then
+		echo " ==> Setting user environment for '$user'"
 
-	#su "$user" -c "xmonad --recompile"
+		cd $HOMED
+		mkdir -p git
+		cd git
+		git clone git://github.com/LukasFolwarczny/dotfiles.git
+		cd dotfiles
 
-	#if (( $? )); then
-	#	die "Failed to recompile XMonad for $user!"
-	#else
-	#	echo " ==> Recompiled XMonad of $user"
-	#fi
+		./setup.sh $HOMED
+
+		cd ../..
+		chown -R $user:$user * .*
+	fi
 }
 
 #check_vgaswitcheroo() {
